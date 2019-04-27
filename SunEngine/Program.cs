@@ -1,27 +1,53 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using SunEngine.DataSeed;
+using LinqToDB.Common;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using SunEngine.Commons.Utils;
+using SunEngine.DataSeed;
 using SunEngine.Migrations;
-
 
 namespace SunEngine
 {
     public class Program
     {
-        private static string configDir;
+        private const string ConfigurationArgumentName = "config:"; 
+        private const string DefaultConfigurationFileName = "Config";
+        
+        public static string configDir;
 
+        public static void SetUpConfigurationDirectory(IEnumerable<string> arguments)
+        {
+            var configurationDirectory = GetConfigurationDirectory(arguments);
+            configDir = Path.GetFullPath(configurationDirectory);   
+        }
+
+        private static string GetConfigurationDirectory(IEnumerable<string> arguments)
+        {
+            var configurationProperty = arguments.FirstOrDefault(x => x.StartsWith(ConfigurationArgumentName));
+            if (configurationProperty.IsNullOrEmpty())
+            {
+                Console.Write("Property for configuration wasn't set. Default configuration will be used.");
+                return DefaultConfigurationFileName;
+            }
+            
+            var configurationFileName = configurationProperty.Substring(ConfigurationArgumentName.Length).Trim();
+            if (configurationFileName.IsNullOrEmpty())
+            {
+                Console.Write("Property for configuration was empty or blank. Default configuration will be used.");
+                return DefaultConfigurationFileName;
+            }
+
+            Console.Write($"Configuration file {configurationFileName} will be used.");
+            return configurationFileName;
+        }
+        
         public static void Main(string[] args)
         {
-            configDir = args.FirstOrDefault(x => x.StartsWith("config:"));
-            configDir = configDir != null ? configDir.Substring("config:".Length) : "Config";
-
-            configDir = Path.GetFullPath(configDir);
-
+            SetUpConfigurationDirectory(args);
 
             if (args.Any(x => x == "help"))
                 InfoPrinter.PrintHelp();
